@@ -6,7 +6,7 @@
 #    By: abeaudui <abeaudui@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/02/21 13:06:31 by arnaud            #+#    #+#              #
-#    Updated: 2023/02/23 12:30:41 by abeaudui         ###   ########.fr        #
+#    Updated: 2023/03/06 16:02:46 by abeaudui         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,7 +15,7 @@ NAME = pipex
 
 FLAGS = -Wall -Wextra -Werror
 
-SRC = pipex.c utils.c childs.c split.c path.c free.c
+SRC = pipex.c utils.c  split.c path.c free.c
 
 OBJS = $(SRC:.c=.o)
 
