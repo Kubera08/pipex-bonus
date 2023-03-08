@@ -6,7 +6,7 @@
 /*   By: abeaudui <abeaudui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/20 14:56:33 by abeaudui          #+#    #+#             */
-/*   Updated: 2023/03/06 17:53:21 by abeaudui         ###   ########.fr       */
+/*   Updated: 2023/03/08 16:38:04 by abeaudui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,86 +64,74 @@ char **fill_tabs(int ac, char **av)
 
 char *create_str(t_pipex pipex, int j)
 {
-	char *str;
-	char **tab;
-	tab = ft_split(pipex.cmd[j], ' ');
-	str = ft_strjoin("/bin/", tab[0]);
-	return(str);
+	pipex.tab = ft_split(pipex.cmd[j], ' ');
+	pipex.str = ft_strjoin("/bin/", pipex.tab[0]);
+	return(pipex.str);
 	
 }
-// BONUS PART TEST
 
+static void ft_waitandclose(t_pipex pipex)
+{
+	while (pipex.a < pipex.process -1)
+	{
+		close(pipex.pipes[pipex.a][0]);
+        close(pipex.pipes[pipex.a][1]);
+		pipex.a++;
+	}
+	while (pipex.k < pipex.process - pipex.j)
+	{
+		waitpid(pipex.pids[pipex.k], NULL, 0);
+		pipex.k++;
+	}
+}
 
-// A FAIRE :
+static t_pipex init_content(t_pipex pipex, int ac, char **av, char **env)
+{
+	pipex.cmd = fill_tabs(ac,av);
+	pipex.path_pos = path_pos(env);
+	pipex.envVec = ft_split(pipex.path_pos, ':');
+	pipex.infile = open(av[1], O_RDONLY);
+	pipex.outfile = open(av[ac -1], O_RDWR, O_CREAT);
+	pipex.j = -1;
+	pipex.i = 0;
+	pipex.a = 0;
+	pipex.k = 0;
+	pipex.process = ac - 3;
+	pipex.pids[0] = ac - 3;
+	pipex.pipes[0][2] = ac - 4;
+	return (pipex);
+}
 
-// creer tableau pour stocker nos options : **options[] 
-
-// fermeture des extremites des pipes non utilisees
-// attente de la fin de tous les processus enfants avec waitpid
+static void ft_dup(int a, int b, int c, int d)
+{
+	dup2(a, b);
+	dup2(c, d);
+}
 
 int main(int ac, char **av, char **env)
 {
 	t_pipex pipex;
-	int i;
-	int j = 0;
 
-	i = 0;
-
-	pipex.cmd = fill_tabs(ac,av);
-	
-	pipex.path_pos = path_pos(env);
-	pipex.envVec = ft_split(pipex.path_pos, ':');
-
-	pipex.infile = open(av[1], O_RDONLY);
-	pipex.outfile = open(av[ac -1], O_RDWR, O_CREAT);
-
-	int process;
-	process = ac - 3;
-
-	int pids[process];// pour stocker nos PIDS
-	int pipes[process -1][2]; // pour stocker nos pipe
-
+	pipex = init_content(pipex, ac, av, env);
 	if (pipex.infile != -1 && pipex.outfile != -1 && ac < 5)
 		return(3);
-	while (i < process -1)	// on crée les pipes
+	while (pipex.i < pipex.process -1)	// on crée les pipes
+		if (pipe(pipex.pipes[pipex.i++]) == -1)
+			return (1);
+	while (pipex.j++ < pipex.process && (pipex.pids[pipex.j] = fork()) != -1)  // on crée les process
 	{
-		if(pipe(pipes[i]) == -1)
-			return 1;
-		i++;
-	}
-	while (j < process) // on crée les process
-	{
-		pids[j] = fork();
-		printf("%d\n", pids[j]);
-
-		if (pids[j] == -1)
-			return(1);
-		if (pids[j] == 0)
+		if (pipex.pids[pipex.j] == 0)
 		{
-			if (j == 0) // premier process donc pas besoin de lire a partir de la pipe
-			{
-				printf("LUCAS\n");
+			if (pipex.j == 0) // premier process donc pas besoin de lire a partir de la pipe
 				dup2(pipex.infile, 0);
-			}
-			else
-				printf("2eme processus");
-			if (j == process -1) // dernier process donc pas besoin d'ecrire dans la pipe
-				dup2(pipex.outfile, 1);
+			if (pipex.j == pipex.process -1) // dernier process donc pas besoin d'ecrire dans la pipe
+				ft_dup(pipex.pipes[pipex.j-1][0], 0, pipex.outfile, 1);
 			else // on est dans le cas d'un process intermediaire
-			{
-				printf("BLABLA\n");
-				dup2(pipes[j - 1][0], 0); // on doit lire a partir de la pipe precedente
-				dup2(pipes[j][1], 1); // on affecte la sortie standard a la sortie de notre pipe
-			}
-			execve(create_str(pipex, j), ft_split(pipex.cmd[j],' '), pipex.envVec);
+				ft_dup(pipex.pipes[pipex.j -1][0], 0, pipex.pipes[pipex.j][1], 1); // on doit lire a partir de la pipe precedente && on affecte la sortie standard a la sortie de notre pipe
+			if (execve(create_str(pipex, pipex.j), ft_split(pipex.cmd[pipex.j],' '), pipex.envVec) == -1)
+				return 3;
 		}
-		j++;
 	}
-	for (int a = 0; a < process - 1; a++) {
-        close(pipes[a][0]);
-        close(pipes[a][1]);
-	}
-	
-	
-	
+	ft_waitandclose(pipex);
+	ft_free(pipex);
 }

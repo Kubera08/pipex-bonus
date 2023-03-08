@@ -6,7 +6,7 @@
 /*   By: abeaudui <abeaudui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/21 12:54:23 by arnaud            #+#    #+#             */
-/*   Updated: 2023/03/06 15:13:18 by abeaudui         ###   ########.fr       */
+/*   Updated: 2023/03/08 16:39:36 by abeaudui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,15 +23,24 @@
 
 typedef struct s_pipex
 {
-	int pid;
-	int fd[2];
+	int i;
+	int j;
+	int k;
+	int a;
+	int process;
+	int ac;
+	char **av;
+	int	pids[1080];
+	int pipes[1080][2];
 	int infile;
 	int outfile;
+	char *str;
+	char **tab;
 	char **cmd;
 	char *path_pos;
 	char **envVec;
 	char **argOptions[];
-		
+	
 }	t_pipex;
 
 void	ft_free(t_pipex pipex);
